@@ -10,6 +10,7 @@ import '../../component/story_item.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function onLoading;
+  final Function onLoaded;
   final Function(String storyId) toDetailScreen;
   final Function toCreateStoryScreen;
   final Function onLogout;
@@ -17,10 +18,11 @@ class HomeScreen extends StatefulWidget {
 
   const HomeScreen({
     Key? key,
+    required this.onLoading,
+    required this.onLoaded,
     required this.toCreateStoryScreen,
     required this.toDetailScreen,
     required this.onLogout,
-    required this.onLoading,
     required this.onError,
   }) : super(key: key);
 
@@ -48,11 +50,10 @@ class _HomeScreenState extends State<HomeScreen> {
             if (state is StoryLoadingState) {
               widget.onLoading();
             } else if (state is StoryErrorState) {
-              Navigator.of(context).pop();
-
+              widget.onLoaded();
               widget.onError(state.message);
             } else if (state is StorySuccessState) {
-              Navigator.of(context).pop();
+              widget.onLoaded();
             }
           },
         ),

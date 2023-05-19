@@ -11,13 +11,17 @@ import '../../component/empty_widget.dart';
 
 class DetailScreen extends StatefulWidget {
   final Function onLoading;
+  final Function onLoaded;
+  final Function onBack;
   final String storyId;
   final Function(String message) onError;
 
   const DetailScreen({
     Key? key,
-    required this.storyId,
     required this.onLoading,
+    required this.onLoaded,
+    required this.onBack,
+    required this.storyId,
     required this.onError,
   }) : super(key: key);
 
@@ -44,11 +48,10 @@ class _DetailScreenState extends State<DetailScreen> {
             if (state is StoryLoadingState) {
               widget.onLoading();
             } else if (state is StoryErrorState) {
-              Navigator.of(context).pop();
-
+              widget.onLoaded();
               widget.onError(state.message);
             } else if (state is StorySuccessState) {
-              Navigator.of(context).pop();
+              widget.onLoaded();
             }
           },
         ),
@@ -94,7 +97,7 @@ class _DetailScreenState extends State<DetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       BackButtonWidget(
-                        onBack: () => Navigator.of(context).pop(),
+                        onBack: () => widget.onBack(),
                       ),
                       const SizedBox(
                         width: 16.0,

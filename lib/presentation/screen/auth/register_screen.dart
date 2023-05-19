@@ -8,15 +8,17 @@ import '../../component/header_widget.dart';
 
 class RegisterScreen extends StatefulWidget {
   final Function onLoading;
+  final Function onLoaded;
   final Function onSubmit;
   final Function onLogin;
   final Function(String message) onError;
 
   const RegisterScreen({
     Key? key,
+    required this.onLoading,
+    required this.onLoaded,
     required this.onSubmit,
     required this.onLogin,
-    required this.onLoading,
     required this.onError,
   }) : super(key: key);
 
@@ -42,14 +44,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         if (state is AuthLoadingState) {
           widget.onLoading();
         } else if (state is AuthSuccessState) {
-          Navigator.of(context).pop();
-
+          widget.onLoaded();
           context.read<PageManager>().returnData(state.response.message);
-
           widget.onSubmit();
         } else if (state is AuthErrorState) {
-          Navigator.of(context).pop();
-
+          widget.onLoaded();
           widget.onError(state.message);
         }
       },

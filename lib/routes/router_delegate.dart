@@ -61,13 +61,13 @@ class MyRouterDelegate extends RouterDelegate
         } else if (route.settings.name != null &&
             route.settings.name!.contains("error")) {
           errorMessage = null;
-        } else if (selectedStory != null || isCreateStory) {
+        } else {
           selectedStory = null;
           isCreateStory = false;
-          context.read<PageManager>().returnData("popped");
-        } else {
           isRegister = false;
         }
+
+        context.read<PageManager>().returnData("popped");
         notifyListeners();
 
         return true;
@@ -104,8 +104,12 @@ class MyRouterDelegate extends RouterDelegate
               ),
             ],
             child: LoginScreen(
-              onLoading: () async {
+              onLoading: () {
                 isLoading = true;
+                notifyListeners();
+              },
+              onLoaded: () {
+                isLoading = false;
                 notifyListeners();
               },
               onSubmit: () async {
@@ -133,8 +137,12 @@ class MyRouterDelegate extends RouterDelegate
                 ),
               ),
               child: RegisterScreen(
-                onLoading: () async {
+                onLoading: () {
                   isLoading = true;
+                  notifyListeners();
+                },
+                onLoaded: () {
+                  isLoading = false;
                   notifyListeners();
                 },
                 onSubmit: () {
@@ -153,7 +161,14 @@ class MyRouterDelegate extends RouterDelegate
             ),
           ),
         if (isLoading) const LoadingPage(),
-        if (errorMessage != null) WarningDialogPage(message: errorMessage!),
+        if (errorMessage != null)
+          WarningDialogPage(
+            message: errorMessage!,
+            onDismiss: () {
+              errorMessage = null;
+              notifyListeners();
+            },
+          ),
       ];
 
   List<Page> get _loggedInStack => [
@@ -177,8 +192,12 @@ class MyRouterDelegate extends RouterDelegate
               ),
             ],
             child: HomeScreen(
-              onLoading: () async {
+              onLoading: () {
                 isLoading = true;
+                notifyListeners();
+              },
+              onLoaded: () {
+                isLoading = false;
                 notifyListeners();
               },
               toDetailScreen: (storyId) {
@@ -222,8 +241,16 @@ class MyRouterDelegate extends RouterDelegate
                 ),
               ],
               child: DetailScreen(
-                onLoading: () async {
+                onLoading: () {
                   isLoading = true;
+                  notifyListeners();
+                },
+                onLoaded: () {
+                  isLoading = false;
+                  notifyListeners();
+                },
+                onBack: () {
+                  selectedStory = null;
                   notifyListeners();
                 },
                 storyId: selectedStory!,
@@ -255,8 +282,16 @@ class MyRouterDelegate extends RouterDelegate
                 ),
               ],
               child: CreateStoryScreen(
-                onLoading: () async {
+                onLoading: () {
                   isLoading = true;
+                  notifyListeners();
+                },
+                onLoaded: () {
+                  isLoading = false;
+                  notifyListeners();
+                },
+                onBack: () {
+                  isCreateStory = false;
                   notifyListeners();
                 },
                 onSend: () {
@@ -271,6 +306,13 @@ class MyRouterDelegate extends RouterDelegate
             ),
           ),
         if (isLoading) const LoadingPage(),
-        if (errorMessage != null) WarningDialogPage(message: errorMessage!),
+        if (errorMessage != null)
+          WarningDialogPage(
+            message: errorMessage!,
+            onDismiss: () {
+              errorMessage = null;
+              notifyListeners();
+            },
+          ),
       ];
 }

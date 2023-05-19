@@ -12,13 +12,17 @@ import '../../component/loading_widget.dart';
 
 class CreateStoryScreen extends StatefulWidget {
   final Function onLoading;
+  final Function onLoaded;
+  final Function onBack;
   final Function onSend;
   final Function(String message) onError;
 
   const CreateStoryScreen({
     Key? key,
-    required this.onSend,
     required this.onLoading,
+    required this.onLoaded,
+    required this.onBack,
+    required this.onSend,
     required this.onError,
   }) : super(key: key);
 
@@ -53,17 +57,15 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
             if (state is StoryLoadingState) {
               widget.onLoading();
             } else if (state is StoryErrorState) {
-              Navigator.of(context).pop();
-
+              widget.onLoaded();
               widget.onError(state.message);
             } else if (state is StorySuccessState) {
-              Navigator.of(context).pop();
+              widget.onLoaded();
 
               BlocProvider.of<StoryBloc>(context).add(StorySetImageEvent(
                 imagePath: null,
                 imageFile: null,
               ));
-
               context.read<PageManager>().returnData(state.response.message);
 
               widget.onSend();
@@ -98,7 +100,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 BackButtonWidget(
-                  onBack: () => Navigator.of(context).pop(),
+                  onBack: () => widget.onBack(),
                 ),
                 const SizedBox(
                   width: 16.0,

@@ -9,6 +9,7 @@ import '../../component/header_widget.dart';
 
 class LoginScreen extends StatefulWidget {
   final Function onLoading;
+  final Function onLoaded;
   final Function onSubmit;
   final Function onRegister;
   final Function(String message) onError;
@@ -16,6 +17,7 @@ class LoginScreen extends StatefulWidget {
   const LoginScreen({
     Key? key,
     required this.onLoading,
+    required this.onLoaded,
     required this.onSubmit,
     required this.onRegister,
     required this.onError,
@@ -44,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
             if (state is AuthLoadingState) {
               widget.onLoading();
             } else if (state is AuthSuccessState) {
-              Navigator.of(context).pop();
+              widget.onLoaded();
 
               BlocProvider.of<PrefBloc>(context).add(PrefSetLoggedDataEvent(
                   name: state.response.loginResult.name,
@@ -53,8 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       state.response.loginResult.token != null,
                   message: state.response.message));
             } else if (state is AuthErrorState) {
-              Navigator.of(context).pop();
-
+              widget.onLoaded();
               widget.onError(state.message);
             }
           },
