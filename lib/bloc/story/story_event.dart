@@ -4,8 +4,9 @@ abstract class StoryEvent extends Equatable {}
 
 class StoryListEvent extends StoryEvent {
   final String accessToken;
+  final int location;
 
-  StoryListEvent({required this.accessToken});
+  StoryListEvent({required this.accessToken, required this.location});
 
   @override
   List<Object?> get props => [];
@@ -64,6 +65,11 @@ class StorySetImageEvent extends StoryEvent {
 
   StorySetImageEvent({required this.imagePath, required this.imageFile});
 
+  @override
+  List<Object?> get props => [];
+}
+
+class StorySetPageItemsEvent extends StoryEvent {
   @override
   List<Object?> get props => [];
 }

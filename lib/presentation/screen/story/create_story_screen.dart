@@ -3,7 +3,10 @@ import 'dart:io';
 import 'package:carita/routes/page_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geocoding/geocoding.dart' as geo;
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:location/location.dart';
 
 import '../../../bloc/pref/pref_bloc.dart';
 import '../../../bloc/story/story_bloc.dart';
@@ -33,6 +36,11 @@ class CreateStoryScreen extends StatefulWidget {
 class _CreateStoryScreenState extends State<CreateStoryScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _descriptionController = TextEditingController();
+
+  late GoogleMapController _mapController;
+  final Set<Marker> markers = {};
+  LatLng selectedPosition = const LatLng(0.0, 0.0);
+  MarkerId _markerId = const MarkerId("CreateStoryMarkerId");
 
   String? accessToken;
 
@@ -179,6 +187,52 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                     const SizedBox(
                       height: 64.0,
                     ),
+                    SizedBox(
+                      height: 400,
+                      width: MediaQuery.of(context).size.width,
+                      child: GoogleMap(
+                        markers: markers,
+                        initialCameraPosition: CameraPosition(
+                          zoom: 18,
+                          target: selectedPosition,
+                        ),
+                        onMapCreated: (controller) {
+                          setState(() {
+                            _mapController = controller;
+                          });
+                        },
+                        onLongPress: (latLng) {
+                          setState(() {
+                            selectedPosition = latLng;
+                          });
+                          _defineMarker(selectedPosition);
+                          _mapController.animateCamera(
+                              CameraUpdate.newLatLng(selectedPosition));
+                        },
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 18.0,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        FilledButton(
+                          onPressed: () {
+                            _updateLocation();
+                            _defineMarker(selectedPosition);
+                            _mapController.animateCamera(
+                                CameraUpdate.newLatLng(selectedPosition));
+                          },
+                          child: const Text(
+                            'Update Location',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(
+                      height: 64.0,
+                    ),
                     Row(
                       mainAxisSize: MainAxisSize.max,
                       children: [
@@ -224,8 +278,9 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     storyBloc.add(StoryCreateEvent(
       imageFile: imageFile,
       description: _descriptionController.text,
-      lat: null,
-      long: null,
+      lat: selectedPosition.latitude == 0.0 ? null : selectedPosition.latitude,
+      long:
+          selectedPosition.longitude == 0.0 ? null : selectedPosition.longitude,
       accessToken: accessToken!,
     ));
   }
@@ -267,5 +322,80 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
       File(imagePath.toString()),
       fit: BoxFit.contain,
     );
+  }
+
+  void _updateLocation() async {
+    final ScaffoldMessengerState scaffoldMessengerState =
+        ScaffoldMessenger.of(context);
+    final Location location = Location();
+    late bool serviceEnabled;
+    late PermissionStatus permissionGranted;
+    late LocationData locationData;
+
+    serviceEnabled = await location.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await location.requestService();
+      if (!serviceEnabled) {
+        scaffoldMessengerState.showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Location services is not available",
+            ),
+          ),
+        );
+        return;
+      }
+    }
+    permissionGranted = await location.hasPermission();
+    if (permissionGranted == PermissionStatus.denied) {
+      permissionGranted = await location.requestPermission();
+      if (permissionGranted != PermissionStatus.granted) {
+        scaffoldMessengerState.showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Location permission is denied",
+            ),
+          ),
+        );
+        return;
+      }
+    }
+
+    locationData = await location.getLocation();
+
+    setState(() {
+      selectedPosition =
+          LatLng(locationData.latitude!, locationData.longitude!);
+    });
+  }
+
+  void _defineMarker(LatLng latLng) async {
+    _markerId = MarkerId(latLng.latitude.toString());
+
+    final address = await _getMapAddress(latLng);
+    final marker = Marker(
+        markerId: _markerId,
+        position: latLng,
+        infoWindow: InfoWindow(title: "Location", snippet: address),
+        onTap: () async {
+          _mapController.animateCamera(CameraUpdate.newLatLngZoom(latLng, 18));
+          await Future.delayed(const Duration(seconds: 1));
+          _mapController.showMarkerInfoWindow(_markerId);
+        });
+    setState(() {
+      markers.clear();
+      markers.add(marker);
+    });
+  }
+
+  Future<String> _getMapAddress(LatLng latLng) async {
+    final info =
+        await geo.placemarkFromCoordinates(latLng.latitude, latLng.longitude);
+
+    final place = info[0];
+    final address =
+        '${place.street}, ${place.subLocality}, ${place.locality}, ${place.postalCode}, ${place.country}';
+
+    return address;
   }
 }

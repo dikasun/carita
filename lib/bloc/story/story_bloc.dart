@@ -14,6 +14,9 @@ part 'story_state.dart';
 class StoryBloc extends Bloc<StoryEvent, StoryState> {
   final StoryRepository _storyRepository;
 
+  int? pageItems = 1;
+  int sizeItems = 10;
+
   String? _imagePath;
   XFile? _imageFile;
 
@@ -23,9 +26,21 @@ class StoryBloc extends Bloc<StoryEvent, StoryState> {
 
   StoryBloc(this._storyRepository) : super(StoryInitialState()) {
     on<StoryListEvent>((event, emit) async {
-      emit(StoryLoadingState());
+      if (pageItems == 1) {
+        emit(StoryLoadingState());
+      }
       try {
-        final stories = await _storyRepository.fetchStories(event.accessToken);
+        final stories = await _storyRepository.fetchStories(
+          event.accessToken,
+          pageItems,
+          sizeItems,
+          event.location,
+        );
+        if (stories.listStory.length < sizeItems) {
+          pageItems = 1;
+        } else {
+          pageItems = pageItems! + 1;
+        }
         emit(StorySuccessState(stories));
       } catch (e) {
         emit(StoryErrorState(e.toString()));
@@ -46,7 +61,6 @@ class StoryBloc extends Bloc<StoryEvent, StoryState> {
     on<StoryCreateEvent>((event, emit) async {
       emit(StoryLoadingState());
       try {
-
         final fileName = event.imageFile.name;
         final bytes = await event.imageFile.readAsBytes();
         final newBytes = await compressImage(bytes);
@@ -70,6 +84,10 @@ class StoryBloc extends Bloc<StoryEvent, StoryState> {
       _imageFile = event.imageFile;
       emit(StorySetImageSuccessState(
           imagePath: imagePath, imageFile: imageFile));
+    });
+
+    on<StorySetPageItemsEvent>((event, emit) {
+      pageItems = 1;
     });
   }
 

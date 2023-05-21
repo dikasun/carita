@@ -5,6 +5,7 @@ import 'package:carita/data/network/api/api_service.dart';
 import 'package:carita/data/repository/auth_repository.dart';
 import 'package:carita/data/repository/pref_repository.dart';
 import 'package:carita/data/repository/story_repository.dart';
+import 'package:carita/presentation/screen/story/maps_screen.dart';
 import 'package:carita/routes/page_manager.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -40,9 +41,12 @@ class MyRouterDelegate extends RouterDelegate
   bool isLogged = false;
 
   String? selectedStory;
+  double? latitude;
+  double? longitude;
   String? errorMessage;
   bool isLoading = false;
   bool isCreateStory = false;
+  bool isStoryMaps = false;
   bool isRegister = false;
 
   @override
@@ -61,13 +65,20 @@ class MyRouterDelegate extends RouterDelegate
         } else if (route.settings.name != null &&
             route.settings.name!.contains("error")) {
           errorMessage = null;
+        } else if (route.settings.name == "maps") {
+          latitude = null;
+          longitude = null;
+
+          if (isStoryMaps) context.read<PageManager>().returnData("popped");
+
+          isStoryMaps = false;
         } else {
           selectedStory = null;
           isCreateStory = false;
           isRegister = false;
+          context.read<PageManager>().returnData("popped");
         }
 
-        context.read<PageManager>().returnData("popped");
         notifyListeners();
 
         return true;
@@ -208,6 +219,12 @@ class MyRouterDelegate extends RouterDelegate
                 isCreateStory = true;
                 notifyListeners();
               },
+              toMapsScreen: () {
+                latitude = null;
+                longitude = null;
+                isStoryMaps = true;
+                notifyListeners();
+              },
               onLogout: () async {
                 preferenceHelper.clearPrefs();
                 isLogged = await preferenceHelper.getIsLogged;
@@ -249,11 +266,65 @@ class MyRouterDelegate extends RouterDelegate
                   isLoading = false;
                   notifyListeners();
                 },
-                onBack: () {
+                onBack: (context) {
                   selectedStory = null;
+                  context.read<PageManager>().returnData("popped");
                   notifyListeners();
                 },
                 storyId: selectedStory!,
+                onError: (message) {
+                  errorMessage = message;
+                  notifyListeners();
+                },
+                toMapScreen: (lat, long) {
+                  latitude = lat;
+                  longitude = long;
+                  isStoryMaps = false;
+                  notifyListeners();
+                },
+              ),
+            ),
+          ),
+        if ((latitude != null && longitude != null) || isStoryMaps)
+          MaterialPage(
+            key: ValueKey("$selectedStory/$latitude,$longitude"),
+            name: "maps",
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider(
+                  create: (context) => StoryBloc(
+                    StoryRepository(
+                      apiService: ApiService(Dio()),
+                    ),
+                  ),
+                ),
+                BlocProvider<PrefBloc>(
+                  create: (BuildContext context) => PrefBloc(
+                    PreferenceRepository(
+                      preferenceHelper: preferenceHelper,
+                    ),
+                  ),
+                ),
+              ],
+              child: MapsScreen(
+                onLoading: () {
+                  isLoading = true;
+                  notifyListeners();
+                },
+                onLoaded: () {
+                  isLoading = false;
+                  notifyListeners();
+                },
+                onBack: (context) {
+                  latitude = null;
+                  longitude = null;
+                  isStoryMaps = false;
+                  context.read<PageManager>().returnData("popped");
+                  notifyListeners();
+                },
+                latitude: latitude,
+                longitude: longitude,
+                isStoryMaps: isStoryMaps,
                 onError: (message) {
                   errorMessage = message;
                   notifyListeners();

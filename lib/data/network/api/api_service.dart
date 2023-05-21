@@ -70,6 +70,8 @@ class ApiService {
           bytes,
           filename: fileName,
         ),
+        if (lat != null) 'lat': lat,
+        if (long != null) 'lon': long,
       });
 
       final response = await _dio.request(
@@ -90,10 +92,20 @@ class ApiService {
     }
   }
 
-  Future<dynamic> getStories(String accessToken) async {
+  Future<dynamic> getStories(
+    String accessToken,
+    int? pageItems,
+    int sizeItems,
+    int location,
+  ) async {
     try {
       final response = await _dio.request(
         _stories,
+        queryParameters: {
+          'page': pageItems,
+          'size': sizeItems,
+          'location': location,
+        },
         options: Options(
           method: 'GET',
           headers: {

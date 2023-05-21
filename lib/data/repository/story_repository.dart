@@ -11,9 +11,15 @@ class StoryRepository {
 
   StoryRepository({required this.apiService});
 
-  Future<StoryResponse> fetchStories(String accessToken) async {
+  Future<StoryResponse> fetchStories(
+    String accessToken,
+    int? pageItems,
+    int sizeItems,
+    int location,
+  ) async {
     try {
-      final response = await apiService.getStories(accessToken);
+      final response =
+          await apiService.getStories(accessToken, pageItems, sizeItems, location);
       return StoryResponse.fromJson(response.data);
     } on DioError catch (e) {
       final message = e.response != null

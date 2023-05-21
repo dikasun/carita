@@ -13,6 +13,7 @@ class HomeScreen extends StatefulWidget {
   final Function onLoaded;
   final Function(String storyId) toDetailScreen;
   final Function toCreateStoryScreen;
+  final Function toMapsScreen;
   final Function onLogout;
   final Function(String message) onError;
 
@@ -21,6 +22,7 @@ class HomeScreen extends StatefulWidget {
     required this.onLoading,
     required this.onLoaded,
     required this.toCreateStoryScreen,
+    required this.toMapsScreen,
     required this.toDetailScreen,
     required this.onLogout,
     required this.onError,
@@ -31,6 +33,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final ScrollController scrollController = ScrollController();
+
   String? _name;
   String? _accessToken;
 
@@ -39,6 +43,16 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
 
     BlocProvider.of<PrefBloc>(context).add(PrefGetLoggedDataEvent());
+
+    scrollController.addListener(() {
+      if (scrollController.position.pixels >=
+          scrollController.position.maxScrollExtent) {
+        if (BlocProvider.of<StoryBloc>(context).pageItems != null) {
+          BlocProvider.of<StoryBloc>(context).add(
+              StoryListEvent(accessToken: _accessToken ?? "", location: 0));
+        }
+      }
+    });
   }
 
   @override
@@ -63,8 +77,8 @@ class _HomeScreenState extends State<HomeScreen> {
               _name = state.name;
               _accessToken = state.accessToken;
 
-              BlocProvider.of<StoryBloc>(context)
-                  .add(StoryListEvent(accessToken: _accessToken ?? ""));
+              BlocProvider.of<StoryBloc>(context).add(
+                  StoryListEvent(accessToken: _accessToken ?? "", location: 0));
             }
           },
         ),
@@ -76,6 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
   _buildScreen(BuildContext context) {
     return Scaffold(
       body: SingleChildScrollView(
+        controller: scrollController,
         child: ListView(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -103,33 +118,60 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final scaffoldMessengerState = ScaffoldMessenger.of(context);
-          final pageManager = context.read<PageManager>();
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton(
+            onPressed: () async {
+              final pageManager = context.read<PageManager>();
 
-          widget.toCreateStoryScreen();
+              BlocProvider.of<StoryBloc>(context).add(StorySetPageItemsEvent());
+              widget.toMapsScreen();
 
-          final dataString = await pageManager.waitForResult().then((value) {
-            BlocProvider.of<StoryBloc>(context)
-                .add(StoryListEvent(accessToken: _accessToken ?? ""));
+              await pageManager.waitForResult().then((value) {
+                BlocProvider.of<StoryBloc>(context).add(StoryListEvent(
+                    accessToken: _accessToken ?? "", location: 0));
+              });
+            },
+            child: const Icon(
+              Icons.map_rounded,
+            ),
+          ),
+          const SizedBox(
+            height: 12.0,
+          ),
+          FloatingActionButton(
+            onPressed: () async {
+              final scaffoldMessengerState = ScaffoldMessenger.of(context);
+              final pageManager = context.read<PageManager>();
 
-            return value;
-          });
+              BlocProvider.of<StoryBloc>(context).add(StorySetPageItemsEvent());
+              widget.toCreateStoryScreen();
 
-          if (dataString != "popped") {
-            scaffoldMessengerState.showSnackBar(
-              SnackBar(
-                content: Text(
-                  dataString,
-                ),
-              ),
-            );
-          }
-        },
-        child: const Icon(
-          Icons.add_rounded,
-        ),
+              final dataString =
+                  await pageManager.waitForResult().then((value) {
+                BlocProvider.of<StoryBloc>(context).add(StoryListEvent(
+                    accessToken: _accessToken ?? "", location: 0));
+
+                return value;
+              });
+
+              if (dataString != "popped") {
+                scaffoldMessengerState.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      dataString,
+                    ),
+                  ),
+                );
+              }
+            },
+            child: const Icon(
+              Icons.add_rounded,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -149,11 +191,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     toDetailScreen: (storyId) async {
                       final pageManager = context.read<PageManager>();
 
+                      BlocProvider.of<StoryBloc>(context)
+                          .add(StorySetPageItemsEvent());
                       widget.toDetailScreen(storyId);
 
                       await pageManager.waitForResult().then((value) {
-                        BlocProvider.of<StoryBloc>(context)
-                            .add(StoryListEvent(accessToken: _accessToken ?? ""));
+                        BlocProvider.of<StoryBloc>(context).add(StoryListEvent(
+                            accessToken: _accessToken ?? "", location: 0));
                       });
                     },
                   );
@@ -162,5 +206,11 @@ class _HomeScreenState extends State<HomeScreen> {
             : const EmptyWidget();
       },
     );
+  }
+
+  @override
+  void dispose() {
+    scrollController.dispose();
+    super.dispose();
   }
 }

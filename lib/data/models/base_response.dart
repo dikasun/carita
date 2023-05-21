@@ -1,26 +1,21 @@
 import 'dart:convert';
 
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'base_response.g.dart';
+part 'base_response.freezed.dart';
+
 BaseResponse baseResponseFromJson(String str) =>
     BaseResponse.fromJson(json.decode(str));
 
 String baseResponseToJson(BaseResponse data) => json.encode(data.toJson());
 
-class BaseResponse {
-  BaseResponse({
-    required this.error,
-    required this.message,
-  });
+@freezed
+class BaseResponse with _$BaseResponse {
+  const factory BaseResponse({
+    required bool error,
+    required String message,
+  }) = _BaseResponse;
 
-  bool error;
-  String message;
-
-  factory BaseResponse.fromJson(Map<String, dynamic> json) => BaseResponse(
-        error: json["error"] as bool,
-        message: json["message"] as String,
-      );
-
-  Map<String, dynamic> toJson() => {
-        "error": error,
-        "message": message,
-      };
+  factory BaseResponse.fromJson(Map<String, dynamic> json) => _$BaseResponseFromJson(json);
 }
