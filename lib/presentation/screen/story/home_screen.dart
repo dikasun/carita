@@ -123,17 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           FloatingActionButton(
-            onPressed: () async {
-              final pageManager = context.read<PageManager>();
-
-              BlocProvider.of<StoryBloc>(context).add(StorySetPageItemsEvent());
-              widget.toMapsScreen();
-
-              await pageManager.waitForResult().then((value) {
-                BlocProvider.of<StoryBloc>(context).add(StoryListEvent(
-                    accessToken: _accessToken ?? "", location: 0));
-              });
-            },
+            onPressed: () => widget.toMapsScreen(),
             child: const Icon(
               Icons.map_rounded,
             ),
@@ -145,27 +135,27 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () async {
               final scaffoldMessengerState = ScaffoldMessenger.of(context);
               final pageManager = context.read<PageManager>();
+              final storyBloc = BlocProvider.of<StoryBloc>(context);
 
-              BlocProvider.of<StoryBloc>(context).add(StorySetPageItemsEvent());
               widget.toCreateStoryScreen();
 
               final dataString =
                   await pageManager.waitForResult().then((value) {
-                BlocProvider.of<StoryBloc>(context).add(StoryListEvent(
-                    accessToken: _accessToken ?? "", location: 0));
+                storyBloc
+                  ..add(StorySetPageItemsEvent())
+                  ..add(StoryListEvent(
+                      accessToken: _accessToken ?? "", location: 0));
 
                 return value;
               });
 
-              if (dataString != "popped") {
-                scaffoldMessengerState.showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      dataString,
-                    ),
+              scaffoldMessengerState.showSnackBar(
+                SnackBar(
+                  content: Text(
+                    dataString,
                   ),
-                );
-              }
+                ),
+              );
             },
             child: const Icon(
               Icons.add_rounded,
@@ -179,31 +169,22 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildList() {
     return BlocBuilder<StoryBloc, StoryState>(
       builder: (context, state) {
-        return state is StorySuccessState && state.response.listStory.length > 0
-            ? ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: state.response.listStory.length,
-                itemBuilder: (context, index) {
-                  var story = state.response.listStory[index];
-                  return StoryItem(
-                    story: story,
-                    toDetailScreen: (storyId) async {
-                      final pageManager = context.read<PageManager>();
-
-                      BlocProvider.of<StoryBloc>(context)
-                          .add(StorySetPageItemsEvent());
-                      widget.toDetailScreen(storyId);
-
-                      await pageManager.waitForResult().then((value) {
-                        BlocProvider.of<StoryBloc>(context).add(StoryListEvent(
-                            accessToken: _accessToken ?? "", location: 0));
-                      });
-                    },
-                  );
-                },
-              )
-            : const EmptyWidget();
+        final stories = BlocProvider.of<StoryBloc>(context).listStory;
+        if (state is StorySuccessState && stories.isNotEmpty) {
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: stories.length,
+            itemBuilder: (context, index) {
+              return StoryItem(
+                story: stories[index],
+                toDetailScreen: (storyId) => widget.toDetailScreen(storyId),
+              );
+            },
+          );
+        } else {
+          return const EmptyWidget();
+        }
       },
     );
   }

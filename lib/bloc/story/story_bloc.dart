@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 
+import '../../data/models/story_response.dart';
 import '../../data/repository/story_repository.dart';
 
 part 'story_event.dart';
@@ -16,6 +17,7 @@ class StoryBloc extends Bloc<StoryEvent, StoryState> {
 
   int? pageItems = 1;
   int sizeItems = 10;
+  List<ListStory> listStory = [];
 
   String? _imagePath;
   XFile? _imageFile;
@@ -36,11 +38,15 @@ class StoryBloc extends Bloc<StoryEvent, StoryState> {
           sizeItems,
           event.location,
         );
+
+        listStory.addAll(stories.listStory);
+
         if (stories.listStory.length < sizeItems) {
-          pageItems = 1;
+          pageItems = null;
         } else {
           pageItems = pageItems! + 1;
         }
+
         emit(StorySuccessState(stories));
       } catch (e) {
         emit(StoryErrorState(e.toString()));
@@ -87,6 +93,7 @@ class StoryBloc extends Bloc<StoryEvent, StoryState> {
     });
 
     on<StorySetPageItemsEvent>((event, emit) {
+      listStory.clear();
       pageItems = 1;
     });
   }

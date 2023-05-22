@@ -6,7 +6,6 @@ import 'package:carita/data/repository/auth_repository.dart';
 import 'package:carita/data/repository/pref_repository.dart';
 import 'package:carita/data/repository/story_repository.dart';
 import 'package:carita/presentation/screen/story/maps_screen.dart';
-import 'package:carita/routes/page_manager.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -68,15 +67,11 @@ class MyRouterDelegate extends RouterDelegate
         } else if (route.settings.name == "maps") {
           latitude = null;
           longitude = null;
-
-          if (isStoryMaps) context.read<PageManager>().returnData("popped");
-
           isStoryMaps = false;
         } else {
           selectedStory = null;
           isCreateStory = false;
           isRegister = false;
-          context.read<PageManager>().returnData("popped");
         }
 
         notifyListeners();
@@ -268,7 +263,6 @@ class MyRouterDelegate extends RouterDelegate
                 },
                 onBack: (context) {
                   selectedStory = null;
-                  context.read<PageManager>().returnData("popped");
                   notifyListeners();
                 },
                 storyId: selectedStory!,
@@ -319,7 +313,6 @@ class MyRouterDelegate extends RouterDelegate
                   latitude = null;
                   longitude = null;
                   isStoryMaps = false;
-                  context.read<PageManager>().returnData("popped");
                   notifyListeners();
                 },
                 latitude: latitude,
